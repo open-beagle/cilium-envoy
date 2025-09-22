@@ -8,6 +8,8 @@
 !\.github
 !\.gitignore
 
+!\.beagle
+
 *.plist
 
 *cscope.files

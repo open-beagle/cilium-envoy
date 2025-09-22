@@ -1,0 +1,96 @@
+name: Build Image Cilium-Entoy
+on:
+  push:
+    branches:
+      - release-v1.34
+
+jobs:
+  build-cache-and-push-images:
+    name: Build cache and push images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
+        with:
+          image: tonistiigi/binfmt:qemu-v7.0.0-28
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+
+      - name: Login to Aliyun Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: registry.cn-qingdao.aliyuncs.com
+          username: ${{ secrets.REGISTRY_USER_ALIYUN }}
+          password: ${{ secrets.REGISTRY_PASSWORD_ALIYUN }}
+
+      - name: Cache Docker layers
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: /tmp/buildx-cache
+          key: docker-cache-${{ github.ref_name }}
+
+      - name: Clear cache
+        run: |
+          rm -rf /tmp/buildx-cache/*
+          docker buildx prune -f
+
+      - name: Multi-arch build & push ${{ github.ref_name }} latest
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        id: docker_build_cd
+        with:
+          provenance: false
+          context: .
+          file: .beagle/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            BUILDER_BASE=quay.io/cilium/cilium-envoy-builder:v1.34
+            ARCHIVE_IMAGE=quay.io/cilium/cilium-envoy-builder:v1.34-archive-latest
+            BAZEL_BUILD_OPTS="--define tcmalloc=disabled --remote_upload_local_results=false"
+          # 使用缓存
+          cache-from: type=local,src=/tmp/buildx-cache
+          cache-to: type=local,dest=/tmp/buildx-cache-new,mode=max
+          push: true
+          tags: |
+            registry.cn-qingdao.aliyuncs.com/wod/cilium-envoy:v1.34.7
+            registry.cn-qingdao.aliyuncs.com/wod/cilium-envoy:v1.34
+
+      # 构建并推送 AMD64 架构镜像
+      - name: Build and push AMD64 Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./.beagle/Dockerfile
+          push: true
+          tags: |
+            registry.cn-qingdao.aliyuncs.com/wod/cilium-envoy:v1.34.7-amd64
+            registry.cn-qingdao.aliyuncs.com/wod/cilium-envoy:v1.34-amd64
+          platforms: linux/amd64
+          build-args: |
+            BUILDER_BASE=quay.io/cilium/cilium-envoy-builder:v1.34
+            ARCHIVE_IMAGE=quay.io/cilium/cilium-envoy-builder:v1.34-archive-latest
+            BAZEL_BUILD_OPTS="--define tcmalloc=disabled --remote_upload_local_results=false"
+          # 使用缓存
+          cache-from: type=local,src=/tmp/buildx-cache
+          cache-to: type=local,dest=/tmp/buildx-cache-new,mode=max
+
+      # 构建并推送 ARM64 架构镜像
+      - name: Build and push ARM64 Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./.beagle/Dockerfile
+          push: true
+          tags: |
+            registry.cn-qingdao.aliyuncs.com/wod/cilium-envoy:v1.34.7-arm64
+            registry.cn-qingdao.aliyuncs.com/wod/cilium-envoy:v1.34-arm64
+          platforms: linux/arm64
+          build-args: |
+            BUILDER_BASE=quay.io/cilium/cilium-envoy-builder:v1.34
+            ARCHIVE_IMAGE=quay.io/cilium/cilium-envoy-builder:v1.34-archive-latest
+            BAZEL_BUILD_OPTS="--define tcmalloc=disabled --remote_upload_local_results=false"
+          # 使用缓存
+          cache-from: type=local,src=/tmp/buildx-cache
+          cache-to: type=local,dest=/tmp/buildx-cache-new,mode=max
