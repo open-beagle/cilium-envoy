@@ -64,6 +64,8 @@ ARG DEBUG
 ARG BUILDARCH
 ARG TARGETARCH
 ENV TARGETARCH=$TARGETARCH
+# Add this new RUN instruction to fix the Git ownership error
+RUN git config --global --add safe.directory /cilium/proxy
 RUN ./bazel/get_workspace_status
 RUN --mount=mode=0777,uid=1337,gid=1337,target=/cilium/proxy/.cache,type=cache,id=$TARGETARCH,sharing=private \
     --mount=target=/tmp/bazel-cache,source=/tmp/bazel-cache,from=builder-cache,rw \
