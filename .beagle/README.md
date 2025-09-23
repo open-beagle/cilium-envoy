@@ -55,20 +55,27 @@ docker run \
 ## build
 
 ```bash
+# multi arch (amd64 , arm64)
 ARCH=multi make docker-image-envoy
 
 # arm64
 ARCH=arm64 make docker-image-envoy
 
+# buildx arm64
+git rev-parse HEAD > SOURCE_VERSION && \
 DOCKER_BUILDKIT=1 \
 docker buildx build \
   --output type=docker \
   --platform=linux/arm64  \
-  --build-arg BUILDER_BASE="registry.cn-qingdao.aliyuncs.com/wod/cilium-envoy:builder-v1.34" \
-  --build-arg ARCHIVE_IMAGE=registry.cn-qingdao.aliyuncs.com/wod/cilium-envoy:builder-v1.34-archive \
-  --build-arg BAZEL_BUILD_OPTS="" \
+  --build-arg BUILDER_BASE="registry.cn-qingdao.aliyuncs.com/wod/cilium-envoy:builder-v1.34-arm64" \
+  --build-arg ARCHIVE_IMAGE="registry.cn-qingdao.aliyuncs.com/wod/cilium-envoy:builder-v1.34-archive-arm64" \
+  --build-arg BASE_IMAGE="registry.cn-qingdao.aliyuncs.com/wod/ubuntu:24.04-arm64" \
+  --build-arg BAZEL_BUILD_OPTS="--define tcmalloc=disabled --remote_upload_local_results=false" \
   -t registry.cn-qingdao.aliyuncs.com/wod/cilium-envoy:1.34.7-arm64 \
   -t registry.cn-qingdao.aliyuncs.com/wod/cilium-envoy:1.34-arm64 \
   -f .beagle/Dockerfile \
   . 
+
+docker push registry.cn-qingdao.aliyuncs.com/wod/cilium-envoy:1.34.7-arm64 && \
+docker push registry.cn-qingdao.aliyuncs.com/wod/cilium-envoy:1.34-arm64
 ```

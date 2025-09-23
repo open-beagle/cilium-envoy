@@ -131,7 +131,8 @@ COPY --from=run-clang-tidy-fix /cilium/proxy/*.txt /
 #
 # Extract installed cilium-envoy binaries to an otherwise empty image
 #
-FROM registry.cn-qingdao.aliyuncs.com/wod/ubuntu:24.04
+ARG BASE_IMAGE=ubuntu:24.04
+FROM $BASE_IMAGE
 LABEL maintainer="maintainer@cilium.io"
 # install ca-certificates package
 RUN apt-get update && apt-get upgrade -y \
