@@ -78,4 +78,12 @@ docker buildx build \
 
 docker push registry.cn-qingdao.aliyuncs.com/wod/cilium-envoy:1.34.7-arm64 && \
 docker push registry.cn-qingdao.aliyuncs.com/wod/cilium-envoy:1.34-arm64
+
+docker run --rm \
+  -e PLUGIN_PLATFORMS=linux/amd64,linux/arm64 \
+  -e PLUGIN_TEMPLATE=registry.cn-qingdao.aliyuncs.com/wod/cilium-envoy:1.34.7-ARCH \
+  -e PLUGIN_TARGET=registry.cn-qingdao.aliyuncs.com/wod/cilium-envoy:1.34.7 \
+  -e PLUGIN_USERNAME=$PLUGIN_REGISTRY_USER \
+  -e PLUGIN_PASSWORD=$PLUGIN_REGISTRY_PASSWORD \
+  registry.cn-qingdao.aliyuncs.com/wod/devops-docker-manifest:1.0
 ```
